@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Kết quả so sánh</title>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; }
+        table { width: 80%; margin: auto; border-collapse: collapse; }
+        th, td { border: 1px solid black; padding: 8px; text-align: center; }
+        img { width: 100px; border-radius: 5px; margin: 5px; }
+    </style>
+</head>
+<body>
+    <h2>Kết quả so sánh</h2>
+
+    <h3>Ảnh gốc</h3>
+    <img src="{{ url_for('static', filename='uploads/' + file1) }}" width="200">
+    <img src="{{ url_for('static', filename='uploads/' + file2) }}" width="200">
+
+    <h3>Khuôn mặt được phát hiện</h3>
+    <div>
+        {% for face in detected_faces1 %}
+            <img src="{{ url_for('static', filename=face.replace('static/', '')) }}">
+        {% endfor %}
+    </div>
+    
+    <div>
+        {% for face in detected_faces2 %}
+            <img src="{{ url_for('static', filename=face.replace('static/', '')) }}">
+        {% endfor %}
+    </div>
+
+    <h3>Kết quả so sánh</h3>
+    <table>
+        <tr>
+            <th>Khuôn mặt 1</th>
+            <th>Khuôn mặt 2</th>
+            <th>Độ tương đồng</th>
+            <th>Trùng khớp</th>
+        </tr>
+        {% for result in results %}
+        <tr>
+            <td><img src="{{ url_for('static', filename=result.face1_img) }}"></td>
+            <td><img src="{{ url_for('static', filename=result.face2_img) }}"></td>
+            <td>{{ '%.2f'|format(result.similarity) }}</td>
+            <td>{{ "✅" if result.match else "❌" }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+
+    <a href="/">Quay lại trang chính</a>
+</body>
+</html>

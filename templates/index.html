@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>So sánh khuôn mặt</title>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; }
+        form { margin: 20px; }
+        input, button { margin: 10px; padding: 8px; }
+    </style>
+</head>
+<body>
+    <h2>So sánh khuôn mặt</h2>
+    <form action="/" method="post" enctype="multipart/form-data">
+        <label>Chọn loại so sánh:</label>
+        <select name="compare_type" id="compare_type" onchange="toggleInputs()">
+            <option value="image_image">Ảnh với Ảnh</option>
+            <option value="image_video">Ảnh với Video</option>
+            <option value="video_video">Video với Video</option>
+        </select>
+
+        <div id="image_image">
+            <label>Chọn Ảnh 1:</label>
+            <input type="file" name="image1">
+            <label>Chọn Ảnh 2:</label>
+            <input type="file" name="image2">
+        </div>
+
+        <div id="image_video" style="display:none;">
+            <label>Chọn Ảnh:</label>
+            <input type="file" name="image">
+            <label>Chọn Video:</label>
+            <input type="file" name="video">
+        </div>
+
+        <div id="video_video" style="display:none;">
+            <label>Chọn Video 1:</label>
+            <input type="file" name="video1">
+            <label>Chọn Video 2:</label>
+            <input type="file" name="video2">
+        </div>
+
+        <button type="submit">So sánh</button>
+    </form>
+
+    <script>
+        function toggleInputs() {
+            let type = document.getElementById("compare_type").value;
+            document.getElementById("image_image").style.display = (type === "image_image") ? "block" : "none";
+            document.getElementById("image_video").style.display = (type === "image_video") ? "block" : "none";
+            document.getElementById("video_video").style.display = (type === "video_video") ? "block" : "none";
+        }
+    </script>
+</body>
+</html>
