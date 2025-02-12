@@ -9,8 +9,11 @@ UPLOAD_FOLDER = 'static/uploads'
 FACES_FOLDER = 'static/faces'  
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['FACES_FOLDER'] = FACES_FOLDER
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'mp4', 'avi', 'mov'}
+def allowed_file(filename):
+    """kiểm tra file có đúng định dạng không"""
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-# Tạo thư mục nếu chưa có
 for folder in [UPLOAD_FOLDER, FACES_FOLDER]:
     if not os.path.exists(folder):
         os.makedirs(folder)

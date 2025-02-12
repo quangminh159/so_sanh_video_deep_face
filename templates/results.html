@@ -4,50 +4,156 @@
     <meta charset="UTF-8">
     <title>Kết quả so sánh</title>
     <style>
-        body { font-family: Arial, sans-serif; text-align: center; }
-        table { width: 80%; margin: auto; border-collapse: collapse; }
-        th, td { border: 1px solid black; padding: 8px; text-align: center; }
-        img { width: 100px; border-radius: 5px; margin: 5px; }
+        body { 
+            font-family: Arial, sans-serif; 
+            text-align: center; 
+            background-color: #f4f4f9; 
+            margin: 0; 
+            padding: 0;
+        }
+
+        h2, h3 { 
+            color: #333; 
+        }
+
+        table { 
+            width: 80%; 
+            margin: 20px auto; 
+            border-collapse: collapse;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            background-color: #fff;
+        }
+
+        th, td { 
+            border: 1px solid #ddd; 
+            padding: 12px; 
+            text-align: center; 
+            background-color: #f9f9f9;
+        }
+
+        th { 
+            background-color: #4CAF50; 
+            color: white;
+        }
+
+        td img { 
+            width: 100px; 
+            border-radius: 5px; 
+            margin: 5px;
+            transition: transform 0.3s ease;
+        }
+
+        td img:hover { 
+            transform: scale(1.1);
+        }
+
+        a { 
+            text-decoration: none; 
+            color: #4CAF50; 
+            font-weight: bold; 
+            margin-top: 20px; 
+            display: inline-block;
+            transition: color 0.3s ease;
+        }
+
+        a:hover { 
+            color: #45a049;
+        }
+
+        .container { 
+            max-width: 1200px; 
+            margin: 0 auto; 
+            padding: 20px;
+        }
+
+        .image-gallery { 
+            display: flex; 
+            justify-content: center; 
+            gap: 20px; 
+            margin-top: 20px;
+        }
+
+        .image-gallery img { 
+            width: 180px; 
+            height: 180px; 
+            object-fit: cover; 
+            border-radius: 10px; 
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .match-status { 
+            font-size: 1.2em; 
+            font-weight: bold; 
+        }
+
+        .match-status.success { 
+            color: #28a745;
+        }
+
+        .match-status.fail { 
+            color: #dc3545;
+        }
     </style>
 </head>
 <body>
-    <h2>Kết quả so sánh</h2>
+    <div class="container">
+        <h2>Kết quả so sánh</h2>
 
-    <h3>Ảnh gốc</h3>
-    <img src="{{ url_for('static', filename='uploads/' + file1) }}" width="200">
-    <img src="{{ url_for('static', filename='uploads/' + file2) }}" width="200">
+        <h3>Ảnh gốc</h3>
+        <div class="image-gallery">
+            <img src="{{ url_for('static', filename='uploads/' + file1) }}" width="200">
+            <img src="{{ url_for('static', filename='uploads/' + file2) }}" width="200">
+        </div>
 
-    <h3>Khuôn mặt được phát hiện</h3>
-    <div>
-        {% for face in detected_faces1 %}
-            <img src="{{ url_for('static', filename=face.replace('static/', '')) }}">
-        {% endfor %}
+        <h3>Khuôn mặt được phát hiện</h3>
+        <div class="image-gallery">
+            {% for face in detected_faces1 %}
+                <img src="{{ url_for('static', filename=face.replace('static/', '')) }}">
+            {% endfor %}
+        </div>
+        
+        <div class="image-gallery">
+            {% for face in detected_faces2 %}
+                <img src="{{ url_for('static', filename=face.replace('static/', '')) }}">
+            {% endfor %}
+        </div>
+
+        <h3>Kết quả so sánh</h3>
+        <table>
+            <tr>
+                <th>Khuôn mặt 1</th>
+                <th>Khuôn mặt 2</th>
+                <th>Độ tương đồng</th>
+                <th>Trùng khớp</th>
+            </tr>
+            {% for result in results %}
+            <tr>
+                <td><img src="{{ url_for('static', filename=result.face1_img.replace('static/', '')) }}"></td>
+                <td><img src="{{ url_for('static', filename=result.face2_img.replace('static/', '')) }}"></td>
+                <td>{{ '%.2f'|format(result.similarity) }}</td>
+                <td>
+                    <span class="match-status {{ 'success' if result.match else 'fail' }}">
+                        {{ "✅" if result.match else "❌" }}
+                    </span>
+                </td>
+            </tr>
+            {% endfor %}
+        </table>
+
+        <a href="/">Quay lại trang chính</a>
     </div>
-    
-    <div>
-        {% for face in detected_faces2 %}
-            <img src="{{ url_for('static', filename=face.replace('static/', '')) }}">
-        {% endfor %}
-    </div>
 
-    <h3>Kết quả so sánh</h3>
-    <table>
-        <tr>
-            <th>Khuôn mặt 1</th>
-            <th>Khuôn mặt 2</th>
-            <th>Độ tương đồng</th>
-            <th>Trùng khớp</th>
-        </tr>
-        {% for result in results %}
-        <tr>
-            <td><img src="{{ url_for('static', filename=result.face1_img) }}"></td>
-            <td><img src="{{ url_for('static', filename=result.face2_img) }}"></td>
-            <td>{{ '%.2f'|format(result.similarity) }}</td>
-            <td>{{ "✅" if result.match else "❌" }}</td>
-        </tr>
-        {% endfor %}
-    </table>
-
-    <a href="/">Quay lại trang chính</a>
+    <script>
+        document.querySelector('a').addEventListener('click', function(e) {
+            e.preventDefault();
+            window.scrollTo({
+                top: 0,
+                behavior: 'smooth'
+            });
+            setTimeout(() => {
+                window.location.href = "/";
+            }, 500);
+        });
+    </script>
 </body>
 </html>

@@ -5,7 +5,7 @@ from mtcnn import MTCNN
 import os
 
 def cosine_similarity(embedding1, embedding2):
-    """Tính độ tương đồng cosine giữa hai vector embedding"""
+    """tính độ tương đồng cosine giữa hai vector embedding"""
     e1, e2 = np.array(embedding1), np.array(embedding2)
     return np.dot(e1, e2) / (np.linalg.norm(e1) * np.linalg.norm(e2))
 
@@ -29,7 +29,7 @@ def detect_faces(image):
     return faces
 
 def get_embeddings(faces, model_name="Facenet512"):
-    """Trích xuất embedding từ danh sách khuôn mặt"""
+    """trích xuất embedding từ danh sách khuôn mặt"""
     embeddings = []
     for i, face in enumerate(faces):
         face_rgb = cv2.cvtColor(face, cv2.COLOR_BGR2RGB)
@@ -43,7 +43,7 @@ def get_embeddings(faces, model_name="Facenet512"):
     return embeddings
 
 def save_detected_faces(faces, base_filename, folder="static/faces"):
-    """Lưu ảnh khuôn mặt đã nhận diện"""
+    """lưu ảnh khuôn mặt đã nhận diện"""
     os.makedirs(folder, exist_ok=True)
     saved_faces = []
     
@@ -71,7 +71,7 @@ def compare_faces(image1_path, image2_path, faces_folder):
     for i, emb1 in enumerate(embeddings1):
         for j, emb2 in enumerate(embeddings2):
             similarity = cosine_similarity(emb1, emb2)
-            match = similarity > 0.5
+            match = similarity > 0.6
             results.append({
                 "face1_index": i + 1,
                 "face2_index": j + 1,
@@ -118,7 +118,7 @@ def compare_faces_in_video(video_path, image_path, faces_folder):
     for i, emb1 in enumerate(embeddings_img):
         for j, emb2 in enumerate(embeddings_vid):
             similarity = cosine_similarity(emb1, emb2)
-            match = similarity > 0.5
+            match = similarity > 0.6
             results.append({
                 "face1_index": i + 1,
                 "face2_index": j + 1,
@@ -144,7 +144,7 @@ def compare_faces_between_videos(video1_path, video2_path, faces_folder):
     for i, emb1 in enumerate(embeddings_vid1):
         for j, emb2 in enumerate(embeddings_vid2):
             similarity = cosine_similarity(emb1, emb2)
-            match = similarity > 0.5
+            match = similarity > 0.6
             results.append({
                 "face1_index": i + 1,
                 "face2_index": j + 1,

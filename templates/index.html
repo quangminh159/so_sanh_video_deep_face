@@ -5,44 +5,90 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>So sánh khuôn mặt</title>
     <style>
-        body { font-family: Arial, sans-serif; text-align: center; }
-        form { margin: 20px; }
-        input, button { margin: 10px; padding: 8px; }
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #f4f4f4;
+            padding: 20px;
+        }
+        .container {
+            max-width: 500px;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            margin: auto;
+        }
+        h2 {
+            color: #333;
+        }
+        form {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        select, input, button {
+            width: 90%;
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            font-size: 16px;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .file-group {
+            width: 90%;
+            text-align: left;
+        }
+        label {
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
-    <h2>So sánh khuôn mặt</h2>
-    <form action="/" method="post" enctype="multipart/form-data">
-        <label>Chọn loại so sánh:</label>
-        <select name="compare_type" id="compare_type" onchange="toggleInputs()">
-            <option value="image_image">Ảnh với Ảnh</option>
-            <option value="image_video">Ảnh với Video</option>
-            <option value="video_video">Video với Video</option>
-        </select>
+    <div class="container">
+        <h2>So sánh khuôn mặt</h2>
+        <form action="/" method="post" enctype="multipart/form-data" onsubmit="return validateForm()">
+            <label>Chọn loại so sánh:</label>
+            <select name="compare_type" id="compare_type" onchange="toggleInputs()">
+                <option value="image_image">Ảnh với Ảnh</option>
+                <option value="image_video">Ảnh với Video</option>
+                <option value="video_video">Video với Video</option>
+            </select>
 
-        <div id="image_image">
-            <label>Chọn Ảnh 1:</label>
-            <input type="file" name="image1">
-            <label>Chọn Ảnh 2:</label>
-            <input type="file" name="image2">
-        </div>
+            <div id="image_image" class="file-group">
+                <label>Chọn Ảnh 1:</label>
+                <input type="file" name="image1" id="image1">
+                <label>Chọn Ảnh 2:</label>
+                <input type="file" name="image2" id="image2">
+            </div>
 
-        <div id="image_video" style="display:none;">
-            <label>Chọn Ảnh:</label>
-            <input type="file" name="image">
-            <label>Chọn Video:</label>
-            <input type="file" name="video">
-        </div>
+            <div id="image_video" class="file-group" style="display:none;">
+                <label>Chọn Ảnh:</label>
+                <input type="file" name="image" id="image">
+                <label>Chọn Video:</label>
+                <input type="file" name="video" id="video">
+            </div>
 
-        <div id="video_video" style="display:none;">
-            <label>Chọn Video 1:</label>
-            <input type="file" name="video1">
-            <label>Chọn Video 2:</label>
-            <input type="file" name="video2">
-        </div>
+            <div id="video_video" class="file-group" style="display:none;">
+                <label>Chọn Video 1:</label>
+                <input type="file" name="video1" id="video1">
+                <label>Chọn Video 2:</label>
+                <input type="file" name="video2" id="video2">
+            </div>
 
-        <button type="submit">So sánh</button>
-    </form>
+            <button type="submit">So sánh</button>
+        </form>
+    </div>
 
     <script>
         function toggleInputs() {
@@ -50,6 +96,24 @@
             document.getElementById("image_image").style.display = (type === "image_image") ? "block" : "none";
             document.getElementById("image_video").style.display = (type === "image_video") ? "block" : "none";
             document.getElementById("video_video").style.display = (type === "video_video") ? "block" : "none";
+        }
+
+        function validateForm() {
+            let type = document.getElementById("compare_type").value;
+            let valid = true;
+            
+            if (type === "image_image") {
+                valid = document.getElementById("image1").files.length > 0 && document.getElementById("image2").files.length > 0;
+            } else if (type === "image_video") {
+                valid = document.getElementById("image").files.length > 0 && document.getElementById("video").files.length > 0;
+            } else if (type === "video_video") {
+                valid = document.getElementById("video1").files.length > 0 && document.getElementById("video2").files.length > 0;
+            }
+            
+            if (!valid) {
+                alert("Vui lòng chọn đủ tệp tin để so sánh.");
+            }
+            return valid;
         }
     </script>
 </body>
