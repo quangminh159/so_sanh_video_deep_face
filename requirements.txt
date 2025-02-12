@@ -2,3 +2,9 @@ deepface
 opencv-python
 mtcnn 
 numpy
+tf-keras
+Werkzeug
+pillow
+tensorflow
+scikit-learn
+flask
