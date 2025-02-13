@@ -1,8 +1,8 @@
 from flask import Flask, render_template, request
 import os
 from werkzeug.utils import secure_filename
-from compare import compare_faces, compare_faces_in_video, compare_faces_between_videos
-# from compare_face import compare_faces, compare_faces_in_video, compare_faces_between_videos
+from compare_face import compare_faces, compare_faces_in_video, compare_faces_between_videos
+# from compare import compare_faces, compare_faces_in_video, compare_faces_between_videos
 
 app = Flask(__name__)
 UPLOAD_FOLDER = 'static/uploads'
