@@ -3,6 +3,8 @@ import os
 from werkzeug.utils import secure_filename
 from compare_face import compare_faces, compare_faces_in_video, compare_faces_between_videos
 # from compare import compare_faces, compare_faces_in_video, compare_faces_between_videos
+import logging
+logging.basicConfig(level=logging.DEBUG)
 
 app = Flask(__name__)
 UPLOAD_FOLDER = 'static/uploads'
