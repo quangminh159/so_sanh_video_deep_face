@@ -4,6 +4,7 @@ import cv2
 from mtcnn import MTCNN
 import os
 from sklearn.cluster import DBSCAN
+from sklearn.mixture import GaussianMixture
 
 def cosine_similarity(embedding1, embedding2):
     '''Tính độ tương đồng cosine giữa hai vector embedding'''
@@ -105,40 +106,50 @@ def extract_faces_from_video(video_path, frame_interval=30):
     cap.release()
     return faces_list
 
-def compare_faces_in_video(video_path, image_path, faces_folder):
+
+
+def compare_faces_in_video(video_path, image_path, faces_folder, top_n=3):
     '''So sánh khuôn mặt giữa ảnh và video'''
+    
     image = cv2.imread(image_path)
     faces_img = detect_faces(image)
     faces_img_saved = save_detected_faces(faces_img, "image_target", faces_folder)
     
     video_faces = extract_faces_from_video(video_path)
     faces_vid_saved = save_detected_faces(video_faces, "video", faces_folder)
+
     embeddings_img = get_embeddings(faces_img)
     embeddings_vid = get_embeddings(video_faces)
-    
+
     clustered_faces_vid, labels_vid = cluster_faces(embeddings_vid, faces_vid_saved)
 
     results = []
-    for label, faces_group in clustered_faces_vid.items():
-        representative_face = get_representative_face(embeddings_vid, faces_vid_saved, labels_vid, label)
-        if representative_face:
-            for i, emb1 in enumerate(embeddings_img):
-                representative_face_embedding = DeepFace.represent(img_path=representative_face, model_name="Facenet512", enforce_detection=False)[0]["embedding"]
-                similarity = cosine_similarity(emb1, representative_face_embedding)
+    for label in set(labels_vid):
+        if label == -1:
+            continue 
+        clustered_faces_vid = get_representative_faces(embeddings_vid, faces_vid_saved, labels_vid, label, top_n)
+
+        for i, emb1 in enumerate(embeddings_img):
+            for face in clustered_faces_vid:
+                rep_face_embedding = DeepFace.represent(img_path=face, model_name="Facenet512", enforce_detection=False)[0]["embedding"]
+                similarity = cosine_similarity(emb1, rep_face_embedding)
                 match = similarity > 0.6
+
                 results.append({
                     "face1_index": i + 1,
                     "face2_index": label + 1,
                     "similarity": similarity,
                     "match": match,
                     "face1_img": faces_img_saved[i],
-                    "face2_img": representative_face
+                    "face2_img": face
                 })
 
     return results, faces_img_saved, faces_vid_saved
 
-def compare_faces_between_videos(video1_path, video2_path, faces_folder):
-    '''So sánh khuôn mặt giữa 2 video'''
+
+def compare_faces_between_videos(video1_path, video2_path, faces_folder, top_n=3, similarity_threshold=0.6):
+    '''So sánh khuôn mặt giữa 2 video nhưng phân cụm riêng từng video'''
+    
     faces_vid1 = extract_faces_from_video(video1_path)
     faces_vid2 = extract_faces_from_video(video2_path)
 
@@ -153,59 +164,118 @@ def compare_faces_between_videos(video1_path, video2_path, faces_folder):
 
     results = []
 
-    for label1, faces_group1 in clustered_faces_vid1.items():
-        representative_face_vid1 = get_representative_face(embeddings_vid1, faces_vid1_saved, labels_vid1, label1)
-        if representative_face_vid1:
-            for label2, faces_group2 in clustered_faces_vid2.items():
-                representative_face_vid2 = get_representative_face(embeddings_vid2, faces_vid2_saved, labels_vid2, label2)
-                if representative_face_vid2:
-                    representative_face_embedding_vid1 = DeepFace.represent(img_path=representative_face_vid1, model_name="Facenet512", enforce_detection=False)[0]["embedding"]
-                    representative_face_embedding_vid2 = DeepFace.represent(img_path=representative_face_vid2, model_name="Facenet512", enforce_detection=False)[0]["embedding"]
-                    
-                    similarity = cosine_similarity(representative_face_embedding_vid1, representative_face_embedding_vid2)
-                    match = similarity > 0.6
+    for label1 in set(labels_vid1):
+        if label1 == -1:
+            continue
+        clustered_faces_vid1 = get_representative_faces(embeddings_vid1, faces_vid1_saved, labels_vid1, label1, top_n)
+        
+        for label2 in set(labels_vid2):
+            if label2 == -1:
+                continue  
+            clustered_faces_vid2 = get_representative_faces(embeddings_vid2, faces_vid2_saved, labels_vid2, label2, top_n)
+            for face1 in clustered_faces_vid1:
+                for face2 in clustered_faces_vid2:
+                    embedding_vid1 = DeepFace.represent(img_path=face1, model_name="Facenet512", enforce_detection=False)[0]["embedding"]
+                    embedding_vid2 = DeepFace.represent(img_path=face2, model_name="Facenet512", enforce_detection=False)[0]["embedding"]
+
+                    similarity = cosine_similarity(embedding_vid1, embedding_vid2)
+                    match = similarity > similarity_threshold  
+
                     results.append({
-                        "face_index": label1 + 1,
-                        "face2_index": label2 + 1,
+                        "face1_cluster": label1 + 1,
+                        "face2_cluster": label2 + 1,
                         "similarity": similarity,
                         "match": match,
-                        "face1_img": representative_face_vid1,
-                        "face2_img": representative_face_vid2
+                        "face1_img": face1,
+                        "face2_img": face2
                     })
 
     return results, faces_vid1_saved, faces_vid2_saved
 
-def get_representative_face(embeddings, faces_saved, labels, label):
-    '''Lấy khuôn mặt đại diện của mỗi nhóm khuôn mặt'''
+def get_representative_faces(embeddings, faces_saved, labels, label, top_n=3):
+    '''Lấy top_n khuôn mặt đại diện của mỗi nhóm khuôn mặt'''
     group_embeddings = [embeddings[i] for i in range(len(embeddings)) if labels[i] == label]
-    if not group_embeddings:
-        return None
-    representative_embedding = np.mean(group_embeddings, axis=0)
-    min_distance = float('inf')
-    representative_face = None
-    for i, emb in enumerate(embeddings):
-        distance = np.linalg.norm(emb - representative_embedding)
-        if distance < min_distance:
-            min_distance = distance
-            representative_face = faces_saved[i]
+    group_faces = [faces_saved[i] for i in range(len(faces_saved)) if labels[i] == label]
     
-    return representative_face
+    if not group_embeddings:
+        return []
 
-def cluster_faces(embeddings, faces_saved, eps=0.6, min_samples=2):
-    '''Phân cụm các khuôn mặt dựa trên embedding'''
+    representative_embedding = np.mean(group_embeddings, axis=0)
+    
+    distances = [np.linalg.norm(emb - representative_embedding) for emb in group_embeddings]
+    
+    sorted_indices = np.argsort(distances)[:top_n]
+    representative_faces = [group_faces[i] for i in sorted_indices]
+    
+    return representative_faces
+
+
+
+    '''su dung CMM de phan cum cac khuon mat'''
+
+import numpy as np
+from sklearn.mixture import GaussianMixture
+
+def cluster_faces(embeddings, faces_saved, n_components=5, similarity_threshold=0.95):
+    '''Phân cụm khuôn mặt bằng GMM và chỉ lấy một khuôn mặt đại diện cho mỗi cụm'''
     if len(embeddings) == 0:
         print("⚠ Không có embedding nào để phân cụm!")
         return {}, []
 
-    clustering = DBSCAN(metric='cosine', eps=eps, min_samples=min_samples).fit(embeddings)
-    labels = clustering.labels_
+    embeddings = np.array(embeddings)
 
+    gmm = GaussianMixture(n_components=n_components, covariance_type='tied', random_state=42)
+    gmm.fit(embeddings)
+    labels = gmm.predict(embeddings)
+
+    centers = gmm.means_
     clustered_faces = {}
-    for idx, label in enumerate(labels):
-        if label == -1:
-            continue  
-        if label not in clustered_faces:
-            clustered_faces[label] = []
-        clustered_faces[label].append(faces_saved[idx])
-    
+
+    seen_embeddings = [] 
+
+    for label in range(n_components):
+        indices = np.where(labels == label)[0]  
+        if len(indices) == 0:
+            continue
+
+        distances = [np.linalg.norm(embeddings[i] - centers[label]) for i in indices]
+        
+        best_index = indices[np.argmin(distances)]
+        best_face = faces_saved[best_index]
+        best_embedding = embeddings[best_index]
+
+        is_duplicate = any(
+            np.dot(best_embedding, emb) / (np.linalg.norm(best_embedding) * np.linalg.norm(emb)) > similarity_threshold
+            for emb in seen_embeddings
+        )
+
+        if not is_duplicate:  
+            clustered_faces[label] = [best_face]
+            seen_embeddings.append(best_embedding)
+
     return clustered_faces, labels
+
+
+
+
+
+
+'''su dun BDSCAN de phan cum cac khuon mat'''
+# def cluster_faces(embeddings, faces_saved, eps=0.65, min_samples=2):
+#     '''Phân cụm các khuôn mặt dựa trên embedding'''
+#     if len(embeddings) == 0:
+#         print("⚠ Không có embedding nào để phân cụm!")
+#         return {}, []
+
+#     clustering = DBSCAN(metric='cosine', eps=eps, min_samples=min_samples).fit(embeddings)
+#     labels = clustering.labels_
+
+#     clustered_faces = {}
+#     for idx, label in enumerate(labels):
+#         if label == -1:
+#             continue  
+#         if label not in clustered_faces:
+#             clustered_faces[label] = []
+#         clustered_faces[label].append(faces_saved[idx])
+    
+#     return clustered_faces, labels
